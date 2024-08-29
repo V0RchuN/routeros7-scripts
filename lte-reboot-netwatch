@@ -1,0 +1,25 @@
+:global failCount;
+:if ([:typeof $failCount] = "nothing") do={:set failCount 0};
+
+/interface lte disable 0;
+/interface lte enable 0;
+
+:delay 30s
+
+:local pingResult [/ping 8.8.8.8 count=3];
+:if ($pingResult = 0) do={
+    :set failCount ($failCount + 1);
+    :if ($failCount >= 3) do={
+        /log warning "Netwatch: 3 unsuccessful attempts to reach 8.8.8.8";
+        :set failCount 0;
+    }
+} else={
+    :set failCount 0;
+
+    :local botToken "<BOT_TOKEN>";
+    :local chatId "<CHAT_ID>";
+    :local threadId "<THREAD_MESSAGE_ID>";
+    :local message ("<b>".[/system/identity/get name] . ":</b> LTE interface has been reseted by Netwatch. LTE uptime: <b>" . [system/resource/get uptime]. "</b>. LTE Session Uptime: ".[interface/lte/monitor 0 as-value once]->"session-uptime"." Neighbor ". [ip/neighbor/get 0 identity] ." uptime: ". [ip/neighbor/get 0 uptime]);
+
+    /tool fetch url="https://api.telegram.org/bot$botToken/sendMessage?chat_id=$chatId&message_thread_id=$threadId&text=$message&parse_mode=HTML" keep-result=no;
+}
